@@ -10,6 +10,7 @@ public class ScriptsPlayerShipsFirstShip : MonoBehaviour {
 	public float curROTSpeed = 0.0f;
 	public float acc = 30.0f;
 	public float rotAcc = 15.0f;
+	public float minSpeed = 15.0f;
 	public float maxSpeed = 60.0f;
 	public float maxROTSpeed = 30.0f;
 
@@ -78,6 +79,7 @@ public class ScriptsPlayerShipsFirstShip : MonoBehaviour {
 
 	//for location enemy objects
 	private Transform boardingDockPoint;
+	private float timeBoarding;
 	public float boardingSpeed = 3.0f;
 	public bool isBoarding = false;
 
@@ -113,7 +115,12 @@ public class ScriptsPlayerShipsFirstShip : MonoBehaviour {
 	public TextMesh upgradeGoldrear;
 
 	//these variables are for controlling third person mode
-	private bool thirdPersonMode;
+	public static bool thirdPersonMode;
+	private Transform thirdPersonCharacter;
+
+
+
+
 
 
 	//this is the component for our ship.
@@ -124,6 +131,12 @@ public class ScriptsPlayerShipsFirstShip : MonoBehaviour {
 	private void Start(){
 		ship = GetComponent<CharacterController>();
 		shipBody = transform.Find ("Body");
+		rearCamera = transform.Find ("ShipCamera");
+
+		thirdPersonCharacter = transform.Find ("Body/ThirdPersonTest");
+		//here i dissable the ships charactercontroller collider because it fing sucks and I use box colliders instead to detect collisions triggers etc...
+		//however the character controller is NEEDED for the movement, which is why we use it in the first place
+		ship.detectCollisions = false;
 		//set our ships stats
 		/*
 		acc = 45.0f;
@@ -207,6 +220,7 @@ public class ScriptsPlayerShipsFirstShip : MonoBehaviour {
 		updateHealth();
 		*/
 
+	
 
 	}
 
@@ -215,235 +229,133 @@ public class ScriptsPlayerShipsFirstShip : MonoBehaviour {
 	private void Update(){
 
 		if(thirdPersonMode){
-			thirdPersonMovement();
-		}
+			rearCamera.camera.enabled = false;
+			ship.enabled = false;
+			thirdPersonCharacter.parent = null;
 
-		if(!thirdPersonMode){
+		}
+	
+		if(!isBoarding){
 			shipMovement();
 		}
 
-		/*
-		upgradeGold.text = UpgradeShop.goldPlundered.ToString();
-		upgradeGoldf.text = UpgradeShop.goldPlundered.ToString();
-		upgradeGoldr.text = UpgradeShop.goldPlundered.ToString();
-		upgradeGoldrear.text = UpgradeShop.goldPlundered.ToString();
-		upgradeGoldl.text = UpgradeShop.goldPlundered.ToString();
-
-		//if(menuManager.gameStart == true){
-
-			//movement controls our ships directional changes
-			movement();
-			//cannonFire controls our ships cannons
-			cannonFire();
-
-			if(health <=0){
-				if(GameManager.currentLevel == 1){
-					audio.PlayOneShot(angryCat, 1.0f);
-					health = maxHealth;
-					tempHealth = maxHealth;
-					updateHealth ();
-				Application.LoadLevel("level1");
-				}
-			if(GameManager.currentLevel == 2){
-				audio.PlayOneShot(angryCat, 1.0f);
-				health = maxHealth;
-				tempHealth = maxHealth;
-				updateHealth ();
-				Application.LoadLevel("level2");
-
-			}
-			if(GameManager.currentLevel == 3){
-				audio.PlayOneShot(angryCat, 1.0f);
-				health = maxHealth;
-				tempHealth = maxHealth;
-				updateHealth ();
-				BossTrigger.bossFight = false;
-				Application.LoadLevel("level3");
-			}
-		}
-		
-		if(health < tempHealth){
-
-				audio.PlayOneShot(gotHit, 0.7f);
-				audio.PlayOneShot(gotHit2, 1.0f);
-				tempHealth = health;
-				updateHealth ();
-			}
-		//}
-
-		if(Input.GetKey("p")){
-			//menuManager.swapScreen(screenName.PAUSE);
+		if(isBoarding){
+			boarding();
 		}
 
-	
-	}*/
-
-	/*public void updateHealth(){
-		Color pawHealth1 = new Color(1,0,0, health) * .01f;
-		Color pawHealth2 = new Color(1,0,0, health - 100) * .01f;
-		Color pawHealth3 = new Color(1,0,0, health - 200) * .01f;
-		Color pawHealth4 = new Color(1,0,0, health - 300) * .01f;
-		Color pawHealth5 = new Color(1,0,0, health - 400) * .01f;
-		Color pawHealth6 = new Color(1,0,0, health - 500) * .01f;
-
-	
-		GameObject.Find("Paw1").transform.renderer.material.SetAlpha(GameObject.Find("Paw1").renderer.material.color.a, health * .01f);
-		GameObject.Find("Paw2").transform.renderer.material.SetAlpha(GameObject.Find("Paw2").renderer.material.color.a, (health - 100) * .01f);
-		GameObject.Find("Paw3").transform.renderer.material.SetAlpha(GameObject.Find("Paw3").renderer.material.color.a, (health - 200) * .01f);
-		GameObject.Find("Paw4").transform.renderer.material.SetAlpha(GameObject.Find("Paw4").renderer.material.color.a, (health - 300) * .01f);
-		GameObject.Find("Paw5").transform.renderer.material.SetAlpha(GameObject.Find("Paw5").renderer.material.color.a, (health - 400) * .01f);
-
-		GameObject.Find("Paw1").transform.renderer.material.color = new Color(255,0,0, health) * .01f;
-		GameObject.Find("Paw2").transform.renderer.material.color = new Color(255,0,0, health - 100) * .01f;
-		GameObject.Find("Paw3").transform.renderer.material.color = new Color(255,0,0, health - 200) * .01f;
-		GameObject.Find("Paw4").transform.renderer.material.color = new Color(255,0,0, health - 300) * .01f;
-		GameObject.Find("Paw5").transform.renderer.material.color = new Color(255,0,0, health - 400) * .01f;
-		GameObject.Find("Paw6").transform.renderer.material.color = new Color(255,0,0, health - 500) * .01f;  //(GameObject.Find("Paw6").renderer.material.color.a, (health - 500) * .01f);
-
-		GameObject.Find("LeftPaw1").transform.renderer.material.color = new Color(255,0,0, health) * .01f;
-		GameObject.Find("LeftPaw2").transform.renderer.material.color = new Color(255,0,0, health - 100) * .01f;
-		GameObject.Find("LeftPaw3").transform.renderer.material.color = new Color(255,0,0, health - 200) * .01f;
-		GameObject.Find("LeftPaw4").transform.renderer.material.color = new Color(255,0,0, health - 300) * .01f;
-		GameObject.Find("LeftPaw5").transform.renderer.material.color = new Color(255,0,0, health - 400) * .01f;
-		GameObject.Find("LeftPaw6").transform.renderer.material.color = new Color(255,0,0, health - 500) * .01f; 
-
-		GameObject.Find("RightPaw1").transform.renderer.material.color = new Color(255,0,0, health) * .01f;
-		GameObject.Find("RightPaw2").transform.renderer.material.color = new Color(255,0,0, health - 100) * .01f;
-		GameObject.Find("RightPaw3").transform.renderer.material.color = new Color(255,0,0, health - 200) * .01f;
-		GameObject.Find("RightPaw4").transform.renderer.material.color = new Color(255,0,0, health - 300) * .01f;
-		GameObject.Find("RightPaw5").transform.renderer.material.color = new Color(255,0,0, health - 400) * .01f;
-		GameObject.Find("RightPaw6").transform.renderer.material.color = new Color(255,0,0, health - 500) * .01f;
-
-		GameObject.Find("FrontPaw1").transform.renderer.material.color = new Color(255,0,0, health) * .01f;
-		GameObject.Find("FrontPaw2").transform.renderer.material.color = new Color(255,0,0, health - 100) * .01f;
-		GameObject.Find("FrontPaw3").transform.renderer.material.color = new Color(255,0,0, health - 200) * .01f;
-		GameObject.Find("FrontPaw4").transform.renderer.material.color = new Color(255,0,0, health - 300) * .01f;
-		GameObject.Find("FrontPaw5").transform.renderer.material.color = new Color(255,0,0, health - 400) * .01f;
-		GameObject.Find("FrontPaw6").transform.renderer.material.color = new Color(255,0,0, health - 500) * .01f;
-
-		GameObject.Find("RearPaw1").transform.renderer.material.color = new Color(255,0,0, health) * .01f;
-		GameObject.Find("RearPaw2").transform.renderer.material.color = new Color(255,0,0, health - 100) * .01f;
-		GameObject.Find("RearPaw3").transform.renderer.material.color = new Color(255,0,0, health - 200) * .01f;
-		GameObject.Find("RearPaw4").transform.renderer.material.color = new Color(255,0,0, health - 300) * .01f;
-		GameObject.Find("RearPaw5").transform.renderer.material.color = new Color(255,0,0, health - 400) * .01f;
-		GameObject.Find("RearPaw6").transform.renderer.material.color = new Color(255,0,0, health - 500) * .01f;
-		*/
+		if(Input.GetKeyDown("t")){
+			thirdPersonMode = true;
+		}
 	}
 
+	
 
 
-	private void thirdPersonMovement(){
-		//asd
 
-	}
 
 	//this method controls the ships movement, acceleration, decelleration as well as rotation
 	public void shipMovement(){
 
 
-		rotateForward = curFWDSpeed;
-		rotateHorizontal = curROTSpeed;
+	
 
 
 
-
+	
 		//this code keeps us from moving off of our set boundary position
 		if(transform.position.y != 40)
 			transform.position = new Vector3(this.transform.position.x, 40, this.transform.position.z);
 
+		if(!thirdPersonMode){
+			rotateForward = curFWDSpeed;
+			rotateHorizontal = curROTSpeed;
 
-		//prop.transform.Rotate( 0, 0 , Time.deltaTime * (7 * curFWDSpeed));
+			//prop.transform.Rotate( 0, 0 , Time.deltaTime * (7 * curFWDSpeed));
 
-		//these two sets are meant to equalize speed if a player isnt pressing a button
-		if(curFWDSpeed > 0 && Input.GetKey("w") == false)
-			curFWDSpeed -= (acc/2) * Time.deltaTime;
-		if(curFWDSpeed < 0 && Input.GetKey("s") == false)
-			curFWDSpeed += (acc/2) * Time.deltaTime;
-
-
-		//maxSpeed equation for greater than
-		if(curFWDSpeed > maxSpeed)
-			curFWDSpeed = maxSpeed;
-
-		//maxSpeed equation for less than
-		if((curFWDSpeed) < (maxSpeed * -1))
-			curFWDSpeed = maxSpeed * -1;
-
-		if(Input.GetKey("w")){
-			curFWDSpeed += acc * Time.deltaTime;
-			if(shipBody.eulerAngles.x > 356 || shipBody.eulerAngles.x < 200  && curFWDSpeed > 0)
-				shipBody.Rotate(Time.deltaTime * -(rotateForward/8), 0, 0);
-		}
-		if(Input.GetKey("s")){
-			curFWDSpeed -= acc * Time.deltaTime;
-			if(shipBody.eulerAngles.x < 4 || shipBody.eulerAngles.x > 200 && curFWDSpeed < 0)
-				shipBody.Rotate(Time.deltaTime * -(rotateForward/8), 0, 0);
-		}
-
-		Vector3 forward =  transform.TransformDirection(Vector3.forward) * curFWDSpeed;
-		ship.Move(forward * Time.deltaTime);
+			//these two sets are meant to equalize speed if a player isnt pressing a button
+			if(curFWDSpeed > 0 && Input.GetKey("w") == false)
+				curFWDSpeed -= (acc/2) * Time.deltaTime;
+			if(curFWDSpeed < 0 && Input.GetKey("s") == false)
+				curFWDSpeed += (acc/2) * Time.deltaTime;
 
 
+			//maxSpeed equation for greater than
+			if(curFWDSpeed > maxSpeed)
+				curFWDSpeed = maxSpeed;
 
-		//rotational commands
-		if(Input.GetKey ("d")){
-			curROTSpeed += rotAcc * Time.deltaTime;
-			if(shipBody.eulerAngles.z > 357 || shipBody.eulerAngles.z < 200  && curROTSpeed > 0)
-				shipBody.Rotate(0, 0, Time.deltaTime * -(rotateHorizontal/8));
-		}
-		if(Input.GetKey("a")){
-			curROTSpeed -= rotAcc * Time.deltaTime;
-			if(shipBody.eulerAngles.z < 3 || shipBody.eulerAngles.z > 200  && curROTSpeed < 0)
-				shipBody.Rotate(0, 0, Time.deltaTime * -(rotateHorizontal/8));
-		}
+			//maxSpeed equation for less than
+			if(curFWDSpeed < minSpeed)
+				curFWDSpeed = minSpeed;
 
-		if(curROTSpeed > maxROTSpeed)
-			curROTSpeed= maxROTSpeed;
+			if(Input.GetKey("w")){
+				curFWDSpeed += acc * Time.deltaTime;
+				if(shipBody.eulerAngles.x > 356 || shipBody.eulerAngles.x < 200  && curFWDSpeed > 0)
+					shipBody.Rotate(Time.deltaTime * -(rotateForward/8), 0, 0);
+			}
+			if(Input.GetKey("s")){
+				curFWDSpeed -= acc * Time.deltaTime;
+				if(shipBody.eulerAngles.x < 4 || shipBody.eulerAngles.x > 200 && curFWDSpeed < 0)
+					shipBody.Rotate(Time.deltaTime * -(rotateForward/8), 0, 0);
+			}
 
-		if(curROTSpeed < maxROTSpeed * -1)
-			curROTSpeed = maxROTSpeed * -1;
+			Vector3 forward =  transform.TransformDirection(Vector3.forward) * curFWDSpeed;
+			ship.Move(forward * Time.deltaTime);
+
+
+
+			//rotational commands
+			if(Input.GetKey ("d")){
+				curROTSpeed += rotAcc * Time.deltaTime;
+				if(shipBody.eulerAngles.z > 357 || shipBody.eulerAngles.z < 200  && curROTSpeed > 0)
+					shipBody.Rotate(0, 0, Time.deltaTime * -(rotateHorizontal/8));
+			}
+			if(Input.GetKey("a")){
+				curROTSpeed -= rotAcc * Time.deltaTime;
+				if(shipBody.eulerAngles.z < 3 || shipBody.eulerAngles.z > 200  && curROTSpeed < 0)
+					shipBody.Rotate(0, 0, Time.deltaTime * -(rotateHorizontal/8));
+			}
+
+			if(curROTSpeed > maxROTSpeed)
+				curROTSpeed= maxROTSpeed;
+
+			if(curROTSpeed < maxROTSpeed * -1)
+				curROTSpeed = maxROTSpeed * -1;
+			
+			//maxSpeed equation for less than
+			if((curFWDSpeed) < (maxSpeed * -1))
+				curFWDSpeed = maxSpeed * -1;
+
+
+			if(curROTSpeed > 0 && Input.GetKey("d") == false){
+				curROTSpeed -= (rotAcc/2) * Time.deltaTime;
+			}
+			if(curROTSpeed < 0 && Input.GetKey("a") == false){
+				curROTSpeed += (rotAcc/2) * Time.deltaTime;
+			}
 		
-		//maxSpeed equation for less than
-		if((curFWDSpeed) < (maxSpeed * -1))
-			curFWDSpeed = maxSpeed * -1;
+
+			//these two statements reset x and z rotational values
+			if(shipBody.eulerAngles.z > 0 && shipBody.eulerAngles.z > 200 && Input.GetKey("d") == false && Input.GetKey ("a") == false){
+				shipBody.Rotate(0, 0, Time.deltaTime * (rotateHorizontal/8 + 0.5f));
+			}
+			if(shipBody.eulerAngles.z > 0 && shipBody.eulerAngles.z < 200 && Input.GetKey("d") == false && Input.GetKey ("a") == false){
+				shipBody.Rotate(0, 0, Time.deltaTime * (rotateHorizontal/8 - 0.5f));
+			}
 
 
-		if(curROTSpeed > 0 && Input.GetKey("d") == false){
-			curROTSpeed -= (rotAcc/2) * Time.deltaTime;
-		}
-		if(curROTSpeed < 0 && Input.GetKey("a") == false){
-			curROTSpeed += (rotAcc/2) * Time.deltaTime;
-		}
+			if(shipBody.eulerAngles.x > 0 && shipBody.eulerAngles.x > 200 && Input.GetKey("w") == false && Input.GetKey ("s") == false){
+				shipBody.Rotate(Time.deltaTime * (rotateForward/8 + 0.5f), 0, 0);
+			}
+			if(shipBody.eulerAngles.x > 0 && shipBody.eulerAngles.x < 200 && Input.GetKey("w") == false && Input.GetKey ("s") == false){
+				shipBody.Rotate(Time.deltaTime * (rotateForward/8 - 0.5f), 0, 0);
+			}
 
-		//these two statements reset x and z rotational values
-		if(shipBody.eulerAngles.z > 0 && shipBody.eulerAngles.z > 200 && Input.GetKey("d") == false && Input.GetKey ("a") == false){
-			shipBody.Rotate(0, 0, Time.deltaTime * (rotateHorizontal/16 + 0.5f));
-		}
-		if(shipBody.eulerAngles.z > 0 && shipBody.eulerAngles.z < 200 && Input.GetKey("d") == false && Input.GetKey ("a") == false){
-			shipBody.Rotate(0, 0, Time.deltaTime * (rotateHorizontal/16 - 0.5f));
-		}
+			transform.Rotate (new Vector3(0, (curROTSpeed) * Time.deltaTime, 0));
 
-
-		if(shipBody.eulerAngles.x > 0 && shipBody.eulerAngles.x > 200 && Input.GetKey("w") == false && Input.GetKey ("s") == false){
-			shipBody.Rotate(Time.deltaTime * (rotateForward/16 + 0.5f), 0, 0);
-		}
-		if(shipBody.eulerAngles.x > 0 && shipBody.eulerAngles.x < 200 && Input.GetKey("w") == false && Input.GetKey ("s") == false){
-			shipBody.Rotate(Time.deltaTime * (rotateForward/16 - 0.5f), 0, 0);
-		}
-
-		transform.Rotate (new Vector3(0, (curROTSpeed) * Time.deltaTime, 0));
-
-
+			}
 		}//end of method movement()
-	
 
-	//temporary health GUI
-	void OnGUI () {
-		//GUI.Box(new Rect(70,10,100,30), "HEALTH " + health);
-		//GUI.Box(new Rect(200,10,150,30), "Gold Plundered " + UpgradeShop.goldPlundered);
-	}
-
-	//terrain collission for the player
+	//old terrain collission for the player
 	void OnControllerColliderHit(ControllerColliderHit col){
 		/*if(col.gameObject.tag == "terrain"){
 			if(curFWDSpeed > 0)
@@ -455,15 +367,46 @@ public class ScriptsPlayerShipsFirstShip : MonoBehaviour {
 			}*/
 	}
 
-	public IEnumerator boardLocation(){
-		float step = boardingSpeed * Time.deltaTime;
-		Vector3.MoveTowards(this.transform.position, this.boardingDockPoint.position, step);
+	//here are  all of my OnTriggerEnter instances for the player
+	void OnTriggerEnter(Collider other){
+		//	cube.transform.rotation = capsule.transform.rotation;
 
-
-		yield return new WaitForSeconds(3f);
-		ship.enabled = false;
+		//here I test to see if the player is hitting a boarding location, if so I find the boarding point and set boarding to true for the player
+		if(other.tag == "BoardingLocation"){
+			timeBoarding = 0;
+			isBoarding = true;
+			boardingDockPoint = other.transform.Find("DockingPoint");
+		}
 	}
+
+	//here is the actual boarding function
+	void boarding(){
+		//this.transform.Rotate(new Vector3( 0, boardingDockPoint.rotation.y, 0));
 			
+			float rotateDist = boardingDockPoint.eulerAngles.y - this.transform.eulerAngles.y;
+			Debug.Log (rotateDist);
+			timeBoarding += Time.deltaTime;
+
+			if(timeBoarding < 7f){
+				float moveStep = boardingSpeed * Time.deltaTime;
+				float rotateStep = boardingSpeed * Time.deltaTime * 2f;
+				transform.position = Vector3.MoveTowards(transform.position, boardingDockPoint.position, moveStep);
+				if(rotateDist >0)
+					transform.rotation = Quaternion.RotateTowards(transform.rotation, boardingDockPoint.rotation, rotateStep);
+				if(rotateDist < 0)
+				transform.rotation = Quaternion.RotateTowards(transform.rotation, Quaternion.Inverse(boardingDockPoint.rotation), rotateStep);
+		}
+	}
+
+
+	/*
+	Vector3 targetDir = target.position - transform.position;
+	float step = speed * Time.deltaTime;
+	Vector3 newDir = Vector3.RotateTowards(transform.forward, targetDir, step, 0.0F);
+	Debug.DrawRay(transform.position, newDir, Color.red);
+	transform.rotation = Quaternion.LookRotation(newDir);
+	*/
+	
 }//end of class ShipController
 
 
